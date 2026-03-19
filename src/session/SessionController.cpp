@@ -1258,6 +1258,9 @@ void SessionController::openBrowser()
 void SessionController::copy()
 {
     view()->copyToClipboard();
+    if (!session().isNull() && session()->getSelectMode()) {
+        setSelectMode(false);
+    }
 }
 
 void SessionController::copyInput()

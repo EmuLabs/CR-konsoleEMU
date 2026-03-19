@@ -2686,9 +2686,11 @@ void TerminalDisplay::updateReadOnlyState(bool readonly)
 
 #define SELECT_BY_MODIFIERS                                                                                                                                    \
     if (startSelect) {                                                                                                                                         \
-        clearSelection();                                                                                                                                      \
-        _actSel = 2;                                                                                                                                           \
-        screen->selSetSelectionStart(false);                                                                                                                   \
+        if (_actSel == 0) {                                                                                                                                    \
+            clearSelection();                                                                                                                                  \
+            _actSel = 2;                                                                                                                                       \
+            screen->selSetSelectionStart(false);                                                                                                               \
+        }                                                                                                                                                      \
         _selModeByModifiers = true;                                                                                                                            \
     }
 
@@ -2722,7 +2724,11 @@ void TerminalDisplay::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Left:
         case Qt::Key_H:
             SELECT_BY_MODIFIERS
-            y = screen->selCursorLeft(1);
+            if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier)) && event->key() == Qt::Key_Left) {
+                y = screen->selCursorWordLeft();
+            } else {
+                y = screen->selCursorLeft(1);
+            }
             if (histLines + y < screenWindow()->currentLine()) {
                 scrollScreenWindow(ScreenWindow::RelativeScrollMode::ScrollLines, histLines + y - screenWindow()->currentLine());
             }
@@ -2730,7 +2736,7 @@ void TerminalDisplay::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Up:
         case Qt::Key_K:
             SELECT_BY_MODIFIERS
-            y = screen->selCursorUp(1);
+            y = screen->selCursorUp((event->modifiers() & Qt::AltModifier) ? 3 : 1);
             if (histLines + y < screenWindow()->currentLine()) {
                 scrollScreenWindow(ScreenWindow::RelativeScrollMode::ScrollLines, histLines + y - screenWindow()->currentLine());
             }
@@ -2738,7 +2744,11 @@ void TerminalDisplay::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Right:
         case Qt::Key_L:
             SELECT_BY_MODIFIERS
-            y = screen->selCursorRight(1);
+            if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier)) && event->key() == Qt::Key_Right) {
+                y = screen->selCursorWordRight();
+            } else {
+                y = screen->selCursorRight(1);
+            }
             if (histLines + y >= screenWindow()->currentLine() + screen->getLines()) {
                 scrollScreenWindow(ScreenWindow::RelativeScrollMode::ScrollLines, histLines + y - screenWindow()->currentLine() - screen->getLines() + 1);
             }
@@ -2746,7 +2756,7 @@ void TerminalDisplay::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Down:
         case Qt::Key_J:
             SELECT_BY_MODIFIERS
-            y = screen->selCursorDown(1);
+            y = screen->selCursorDown((event->modifiers() & Qt::AltModifier) ? 3 : 1);
             if (histLines + y >= screenWindow()->currentLine() + screen->getLines()) {
                 scrollScreenWindow(ScreenWindow::RelativeScrollMode::ScrollLines, histLines + y - screenWindow()->currentLine() - screen->getLines() + 1);
             }
@@ -2820,6 +2830,14 @@ void TerminalDisplay::keyPressEvent(QKeyEvent *event)
                     scrollScreenWindow(ScreenWindow::RelativeScrollMode::ScrollLines, histLines + y - screenWindow()->currentLine());
                 }
             }
+            break;
+        case Qt::Key_C:
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                copyToClipboard();
+                sessionController()->setSelectMode(false);
+                return;
+            }
+            moved = false;
             break;
         default:
             moved = false;

@@ -157,6 +157,8 @@ public:
     int selCursorDown(int n);
     int selCursorLeft(int n);
     int selCursorRight(int n);
+    int selCursorWordLeft();
+    int selCursorWordRight();
 
     int selSetSelectionStart(int mode);
     int selSetSelectionEnd(int mode);

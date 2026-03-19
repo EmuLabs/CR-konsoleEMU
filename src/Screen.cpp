@@ -260,6 +260,100 @@ int Screen::selCursorRight(int n)
     return _selCuY;
 }
 
+namespace
+{
+enum class SelectWordClass {
+    Space,
+    Word,
+    Symbol
+};
+
+inline SelectWordClass classifySelectChar(const Character &ch)
+{
+    const QChar qc(ch.character);
+    if (qc.isSpace()) {
+        return SelectWordClass::Space;
+    }
+    if (qc.isLetterOrNumber() || qc == u'_') {
+        return SelectWordClass::Word;
+    }
+    return SelectWordClass::Symbol;
+}
+}
+
+int Screen::selCursorWordLeft()
+{
+    const int firstY = -_history->getLines();
+    if (_selCuX == 0 && _selCuY == firstY) {
+        return _selCuY;
+    }
+
+    selCursorLeft(1);
+    const auto atStart = [&]() {
+        return _selCuX == 0 && _selCuY == firstY;
+    };
+    const auto currentClass = [&]() {
+        return classifySelectChar(getCharacter(_selCuX, _selCuY + _history->getLines()));
+    };
+    const auto previousClass = [&]() {
+        if (atStart()) {
+            return currentClass();
+        }
+        if (_selCuX > 0) {
+            return classifySelectChar(getCharacter(_selCuX - 1, _selCuY + _history->getLines()));
+        }
+        return classifySelectChar(getCharacter(_columns - 1, _selCuY - 1 + _history->getLines()));
+    };
+
+    while (!atStart() && currentClass() == SelectWordClass::Space) {
+        selCursorLeft(1);
+    }
+
+    const SelectWordClass cls = currentClass();
+    while (!atStart() && previousClass() == cls) {
+        selCursorLeft(1);
+    }
+    return _selCuY;
+}
+
+int Screen::selCursorWordRight()
+{
+    const int lastY = _lines - 1;
+    if (_selCuX == _columns - 1 && _selCuY == lastY) {
+        return _selCuY;
+    }
+
+    const auto atEnd = [&]() {
+        return _selCuX == _columns - 1 && _selCuY == lastY;
+    };
+    const auto currentClass = [&]() {
+        return classifySelectChar(getCharacter(_selCuX, _selCuY + _history->getLines()));
+    };
+    const auto nextClass = [&]() {
+        if (atEnd()) {
+            return currentClass();
+        }
+        if (_selCuX < _columns - 1) {
+            return classifySelectChar(getCharacter(_selCuX + 1, _selCuY + _history->getLines()));
+        }
+        return classifySelectChar(getCharacter(0, _selCuY + 1 + _history->getLines()));
+    };
+
+    const SelectWordClass cls = currentClass();
+    while (!atEnd() && nextClass() == cls) {
+        selCursorRight(1);
+    }
+
+    while (!atEnd() && nextClass() == SelectWordClass::Space) {
+        selCursorRight(1);
+    }
+
+    if (!atEnd()) {
+        selCursorRight(1);
+    }
+    return _selCuY;
+}
+
 int Screen::selSetSelectionStart(int mode)
 {
     // mode: 0 = character selection
