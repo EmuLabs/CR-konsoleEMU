@@ -33,3 +33,53 @@ https://mail.kde.org/mailman/listinfo/konsole-devel.
 - [Forums](https://discuss.kde.org/tag/konsole)
 - [Konsole Bug Reports ](https://bugs.kde.org/describecomponents.cgi?product=konsole)
 
+## Local Build and Install (KonsoleEMU)
+
+The commands below build Konsole from source and install it under `~/.local`
+so it can coexist with your system Konsole package.
+
+1. Configure with a dedicated build directory and local install prefix:
+
+```sh
+cmake -S /home/q/git/CR-konsoleEMU \
+  -B /home/q/git/CR-konsoleEMU/build-local \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_INSTALL_PREFIX=$HOME/.local
+```
+
+2. Build:
+
+```sh
+cmake --build /home/q/git/CR-konsoleEMU/build-local -j
+```
+
+3. Install:
+
+```sh
+cmake --install /home/q/git/CR-konsoleEMU/build-local
+```
+
+4. Run the locally installed build:
+
+```sh
+source /home/q/git/CR-konsoleEMU/build-local/prefix.sh
+$HOME/.local/bin/konsole
+```
+
+### Optional: launcher alias `konsoleemu`
+
+To distinguish the patched build from system Konsole, create a wrapper script
+named `konsoleemu` in `~/.local/bin` that launches `$HOME/.local/bin/konsole`.
+This lets you run the custom build with:
+
+```sh
+konsoleemu
+```
+
+### Rebuild after source changes
+
+```sh
+cmake --build /home/q/git/CR-konsoleEMU/build-local -j
+cmake --install /home/q/git/CR-konsoleEMU/build-local
+```
+
