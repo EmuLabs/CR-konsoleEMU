@@ -181,7 +181,9 @@ Q_SIGNALS:
      */
 
     void requestSplitViewLeftRight();
+    void requestSplitViewLeftRightToLeft();
     void requestSplitViewTopBottom();
+    void requestSplitViewTopBottomToTop();
 
     /**
      * Emitted when the current working directory of the session associated with

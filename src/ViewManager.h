@@ -15,6 +15,7 @@
 
 #include "containers/ContainerInfo.h"
 #include "konsoleprivate_export.h"
+#include "widgets/ViewSplitter.h"
 // Konsole
 
 class KActionCollection;
@@ -30,7 +31,6 @@ class TabbedViewContainer;
 class TabbedViewContainer;
 class TerminalDisplay;
 class ViewProperties;
-class ViewSplitter;
 
 /**
  * Manages the terminal display widgets in a Konsole window or part.
@@ -385,7 +385,9 @@ public Q_SLOTS:
 private Q_SLOTS:
     // called when the "Split View Left/Right" menu item is selected
     void splitLeftRight();
+    void splitLeftRightToLeft();
     void splitTopBottom();
+    void splitTopBottomToTop();
     void splitAuto(bool fromNextTab = false);
     void splitLeftRightNextTab();
     void splitTopBottomNextTab();
@@ -494,7 +496,7 @@ private:
     // takes a view from a view container owned by a different manager and places it in
     // newContainer owned by this manager
     void takeView(ViewManager *otherManager, TabbedViewContainer *otherContainer, TabbedViewContainer *newContainer, TerminalDisplay *view);
-    void splitView(Qt::Orientation orientation, bool fromNextTab = false);
+    void splitView(Qt::Orientation orientation, bool fromNextTab = false, ViewSplitter::AddBehavior behavior = ViewSplitter::AddBehavior::AddAfter);
 
     // creates a new container which can hold terminal displays
     TabbedViewContainer *createContainer();

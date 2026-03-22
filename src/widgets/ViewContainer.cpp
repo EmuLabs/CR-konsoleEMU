@@ -400,11 +400,11 @@ void TabbedViewContainer::addView(TerminalDisplay *view)
     Q_EMIT viewAdded(view);
 }
 
-void TabbedViewContainer::splitView(TerminalDisplay *view, Qt::Orientation orientation)
+void TabbedViewContainer::splitView(TerminalDisplay *view, Qt::Orientation orientation, ViewSplitter::AddBehavior behavior)
 {
     auto viewSplitter = qobject_cast<ViewSplitter *>(currentWidget());
     viewSplitter->clearMaximized();
-    viewSplitter->addTerminalDisplay(view, orientation);
+    viewSplitter->addTerminalDisplay(view, orientation, behavior);
     connectTerminalDisplay(view);
     // Put this view on the foreground if it requests so, eg. on bell activity
     connect(view, &TerminalDisplay::activationRequest, this, &Konsole::TabbedViewContainer::activateView);

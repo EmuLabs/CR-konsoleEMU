@@ -15,6 +15,7 @@
 #include "ViewManager.h"
 #include "containers/ContainerInfo.h"
 #include "session/Session.h"
+#include "widgets/ViewSplitter.h"
 
 // Qt
 class QPoint;
@@ -62,7 +63,7 @@ public:
     void addSplitter(ViewSplitter *viewSplitter, int index = -1);
 
     /** splits the currently focused Splitter */
-    void splitView(TerminalDisplay *view, Qt::Orientation orientation);
+    void splitView(TerminalDisplay *view, Qt::Orientation orientation, ViewSplitter::AddBehavior behavior = ViewSplitter::AddBehavior::AddAfter);
 
     void setTabActivity(int index, bool activity);
 

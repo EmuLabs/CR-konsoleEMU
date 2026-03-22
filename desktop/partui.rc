@@ -11,7 +11,9 @@
         <Menu name="view-split">
             <text>Split View</text>
             <Action name="split-view-left-right"/>
+            <Action name="split-view-left-right-to-left"/>
             <Action name="split-view-top-bottom"/>
+            <Action name="split-view-top-bottom-to-top"/>
         </Menu>
         <Separator/>
         <Action name="set-encoding"/>

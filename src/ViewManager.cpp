@@ -135,11 +135,27 @@ void ViewManager::setupActions()
     splitViewActions->addAction(action);
 
     action = new QAction(this);
+    action->setIcon(QIcon::fromTheme(QStringLiteral("view-split-left-right")));
+    action->setText(i18nc("@action:inmenu", "Split View Left/Right (New Pane on Left)"));
+    connect(action, &QAction::triggered, this, &ViewManager::splitLeftRightToLeft);
+    collection->addAction(QStringLiteral("split-view-left-right-to-left"), action);
+    collection->setDefaultShortcut(action, QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_BracketLeft));
+    splitViewActions->addAction(action);
+
+    action = new QAction(this);
     action->setIcon(QIcon::fromTheme(QStringLiteral("view-split-top-bottom")));
     action->setText(i18nc("@action:inmenu", "Split View Top/Bottom"));
     connect(action, &QAction::triggered, this, &ViewManager::splitTopBottom);
     collection->setDefaultShortcut(action, QKeySequence(Qt::CTRL | Qt::Key_ParenRight));
     collection->addAction(QStringLiteral("split-view-top-bottom"), action);
+    splitViewActions->addAction(action);
+
+    action = new QAction(this);
+    action->setIcon(QIcon::fromTheme(QStringLiteral("view-split-top-bottom")));
+    action->setText(i18nc("@action:inmenu", "Split View Top/Bottom (New Pane Above)"));
+    connect(action, &QAction::triggered, this, &ViewManager::splitTopBottomToTop);
+    collection->addAction(QStringLiteral("split-view-top-bottom-to-top"), action);
+    collection->setDefaultShortcut(action, QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_BracketRight));
     splitViewActions->addAction(action);
 
     action = new QAction(this);
@@ -776,9 +792,19 @@ void ViewManager::splitLeftRight()
     splitView(Qt::Horizontal);
 }
 
+void ViewManager::splitLeftRightToLeft()
+{
+    splitView(Qt::Horizontal, false, ViewSplitter::AddBehavior::AddBefore);
+}
+
 void ViewManager::splitTopBottom()
 {
     splitView(Qt::Vertical);
+}
+
+void ViewManager::splitTopBottomToTop()
+{
+    splitView(Qt::Vertical, false, ViewSplitter::AddBehavior::AddBefore);
 }
 
 void ViewManager::splitAuto(bool fromNextTab)
@@ -808,7 +834,7 @@ void ViewManager::splitAutoNextTab()
     splitAuto(true);
 }
 
-void ViewManager::splitView(Qt::Orientation orientation, bool fromNextTab)
+void ViewManager::splitView(Qt::Orientation orientation, bool fromNextTab, ViewSplitter::AddBehavior behavior)
 {
     TerminalDisplay *terminalDisplay;
     TerminalDisplay *focused;
@@ -838,7 +864,7 @@ void ViewManager::splitView(Qt::Orientation orientation, bool fromNextTab)
         Q_EMIT activeViewChanged(activeViewController());
     }
 
-    _viewContainer->splitView(terminalDisplay, orientation);
+    _viewContainer->splitView(terminalDisplay, orientation, behavior);
 
     toggleActionsBasedOnState();
 
@@ -898,7 +924,9 @@ SessionController *ViewManager::createController(Session *session, TerminalDispl
     connect(view, &Konsole::TerminalDisplay::destroyed, controller, &Konsole::SessionController::deleteLater);
     connect(controller, &Konsole::SessionController::viewDragAndDropped, this, &Konsole::ViewManager::forgetController);
     connect(controller, &Konsole::SessionController::requestSplitViewLeftRight, this, &Konsole::ViewManager::splitLeftRight);
+    connect(controller, &Konsole::SessionController::requestSplitViewLeftRightToLeft, this, &Konsole::ViewManager::splitLeftRightToLeft);
     connect(controller, &Konsole::SessionController::requestSplitViewTopBottom, this, &Konsole::ViewManager::splitTopBottom);
+    connect(controller, &Konsole::SessionController::requestSplitViewTopBottomToTop, this, &Konsole::ViewManager::splitTopBottomToTop);
     connect(this, &Konsole::ViewManager::contextMenuAdditionalActionsChanged, controller, &Konsole::SessionController::setContextMenuAdditionalActions);
 
     // if this is the first controller created then set it as the active controller
@@ -1074,7 +1102,9 @@ void ViewManager::setNavigationMethod(NavigationMethod method)
     enableAction(QStringLiteral("last-used-tab"));
     enableAction(QStringLiteral("last-used-tab-reverse"));
     enableAction(QStringLiteral("split-view-left-right"));
+    enableAction(QStringLiteral("split-view-left-right-to-left"));
     enableAction(QStringLiteral("split-view-top-bottom"));
+    enableAction(QStringLiteral("split-view-top-bottom-to-top"));
     enableAction(QStringLiteral("split-view-left-right-next-tab"));
     enableAction(QStringLiteral("split-view-top-bottom-next-tab"));
     enableAction(QStringLiteral("rename-session"));

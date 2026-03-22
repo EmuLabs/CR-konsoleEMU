@@ -19,7 +19,9 @@
         <Menu name="view"><text>View</text>
             <Menu name="view-split"><text>Split View</text>
                 <Action name="split-view-left-right"/>
+                <Action name="split-view-left-right-to-left"/>
                 <Action name="split-view-top-bottom"/>
+                <Action name="split-view-top-bottom-to-top"/>
                 <Action name="split-view-left-right-next-tab"/>
                 <Action name="split-view-top-bottom-next-tab"/>
                 <Action name="close-active-view"/>

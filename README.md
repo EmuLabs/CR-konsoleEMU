@@ -83,3 +83,23 @@ cmake --build /home/q/git/CR-konsoleEMU/build-local -j
 cmake --install /home/q/git/CR-konsoleEMU/build-local
 ```
 
+### KonsoleEMU: split with new pane on the left
+
+Standard Konsole splits horizontally with the **new** terminal to the **right** of the
+focused one. This fork adds **Split View Left/Right (New Pane on Left)**:
+
+- Menu: **View → Split View → Split View Left/Right (New Pane on Left)**
+- Default shortcut: **Ctrl+Shift+[**
+
+The original **Split View Left/Right** (new pane on the right) remains unchanged
+(default shortcut: **Ctrl+(**).
+
+Similarly, **Split View Top/Bottom (New Pane Above)** puts the new terminal **above**
+the focused one:
+
+- Menu: **View → Split View → Split View Top/Bottom (New Pane Above)**
+- Default shortcut: **Ctrl+Shift+]**
+
+The original **Split View Top/Bottom** (new pane below) is unchanged
+(default shortcut: **Ctrl+)**).
+
