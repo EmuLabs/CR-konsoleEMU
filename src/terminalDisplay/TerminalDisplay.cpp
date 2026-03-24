@@ -238,6 +238,9 @@ TerminalDisplay::TerminalDisplay(QWidget *parent)
     connect(_headerBar, &TerminalHeaderBar::requestMoveToNewTab, this, [this] {
         requestMoveToNewTab(this);
     });
+    connect(_headerBar, &TerminalHeaderBar::requestDetachView, this, [this] {
+        requestDetachView(this);
+    });
     connect(_scrollBar, &QScrollBar::sliderMoved, this, &Konsole::TerminalDisplay::viewScrolledByUser);
 
     _hoverLinkIndicator = new QLabel(this);

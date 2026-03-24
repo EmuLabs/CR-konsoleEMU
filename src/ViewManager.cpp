@@ -237,6 +237,34 @@ void ViewManager::setupActions()
     connect(action, &QAction::triggered, this, &ViewManager::shrinkActiveContainer);
     _multiSplitterOnlyActions << action;
 
+    action = new QAction(this);
+    action->setText(i18nc("@action:inmenu", "Expand View (Height)"));
+    action->setEnabled(false);
+    connect(action, &QAction::triggered, this, &ViewManager::expandActiveViewVertical);
+    collection->addAction(QStringLiteral("expand-active-view-vertical"), action);
+    _multiSplitterOnlyActions << action;
+
+    action = new QAction(this);
+    action->setText(i18nc("@action:inmenu", "Shrink View (Height)"));
+    action->setEnabled(false);
+    connect(action, &QAction::triggered, this, &ViewManager::shrinkActiveViewVertical);
+    collection->addAction(QStringLiteral("shrink-active-view-vertical"), action);
+    _multiSplitterOnlyActions << action;
+
+    action = new QAction(this);
+    action->setText(i18nc("@action:inmenu", "Expand View (Width)"));
+    action->setEnabled(false);
+    connect(action, &QAction::triggered, this, &ViewManager::expandActiveViewHorizontal);
+    collection->addAction(QStringLiteral("expand-active-view-horizontal"), action);
+    _multiSplitterOnlyActions << action;
+
+    action = new QAction(this);
+    action->setText(i18nc("@action:inmenu", "Shrink View (Width)"));
+    action->setEnabled(false);
+    connect(action, &QAction::triggered, this, &ViewManager::shrinkActiveViewHorizontal);
+    collection->addAction(QStringLiteral("shrink-active-view-horizontal"), action);
+    _multiSplitterOnlyActions << action;
+
     action = collection->addAction(QStringLiteral("detach-view"));
     action->setEnabled(true);
     action->setIcon(QIcon::fromTheme(QStringLiteral("tab-detach")));
@@ -571,6 +599,14 @@ void ViewManager::detachActiveView()
     }
 }
 
+void ViewManager::detachTerminalDisplay(TerminalDisplay *display)
+{
+    if (display != nullptr) {
+        display->setFocus(Qt::OtherFocusReason);
+    }
+    detachActiveView();
+}
+
 void ViewManager::detachActiveTab()
 {
     if (_viewContainer->count() < 2) {
@@ -880,6 +916,26 @@ void ViewManager::expandActiveContainer()
 void ViewManager::shrinkActiveContainer()
 {
     _viewContainer->activeViewSplitter()->adjustActiveTerminalDisplaySize(-10);
+}
+
+void ViewManager::expandActiveViewVertical()
+{
+    _viewContainer->activeViewSplitter()->adjustActiveTerminalDisplaySizeAlongOrientation(10, Qt::Vertical);
+}
+
+void ViewManager::shrinkActiveViewVertical()
+{
+    _viewContainer->activeViewSplitter()->adjustActiveTerminalDisplaySizeAlongOrientation(-10, Qt::Vertical);
+}
+
+void ViewManager::expandActiveViewHorizontal()
+{
+    _viewContainer->activeViewSplitter()->adjustActiveTerminalDisplaySizeAlongOrientation(10, Qt::Horizontal);
+}
+
+void ViewManager::shrinkActiveViewHorizontal()
+{
+    _viewContainer->activeViewSplitter()->adjustActiveTerminalDisplaySizeAlongOrientation(-10, Qt::Horizontal);
 }
 
 void ViewManager::equalSizeAllContainers()
@@ -1825,12 +1881,14 @@ void ViewManager::registerTerminal(TerminalDisplay *terminal)
 {
     connect(terminal, &TerminalDisplay::requestToggleExpansion, _viewContainer, &TabbedViewContainer::toggleMaximizeCurrentTerminal, Qt::UniqueConnection);
     connect(terminal, &TerminalDisplay::requestMoveToNewTab, _viewContainer, &TabbedViewContainer::moveToNewTab, Qt::UniqueConnection);
+    connect(terminal, &TerminalDisplay::requestDetachView, this, &ViewManager::detachTerminalDisplay, Qt::UniqueConnection);
 }
 
 void ViewManager::unregisterTerminal(TerminalDisplay *terminal)
 {
     disconnect(terminal, &TerminalDisplay::requestToggleExpansion, nullptr, nullptr);
     disconnect(terminal, &TerminalDisplay::requestMoveToNewTab, nullptr, nullptr);
+    disconnect(terminal, &TerminalDisplay::requestDetachView, nullptr, nullptr);
 }
 
 #include "moc_ViewManager.cpp"

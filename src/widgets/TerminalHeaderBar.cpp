@@ -15,6 +15,7 @@
 #include <KLocalizedString>
 #include <QApplication>
 #include <QBoxLayout>
+#include <QCursor>
 #include <QDrag>
 #include <QLabel>
 #include <QMimeData>
@@ -93,6 +94,14 @@ TerminalHeaderBar::TerminalHeaderBar(QWidget *parent)
     connect(m_moveToNewTab, &QToolButton::clicked, this, &TerminalHeaderBar::requestMoveToNewTab);
 
     m_boxLayout->addWidget(m_moveToNewTab);
+
+    // Detach view button
+    m_detachViewBtn = new QToolButton(this);
+    m_detachViewBtn->setIcon(QIcon::fromTheme(QStringLiteral("tab-detach")));
+    m_detachViewBtn->setAutoRaise(true);
+    m_detachViewBtn->setToolTip(i18nc("@info:tooltip", "Detach terminal into new window"));
+    connect(m_detachViewBtn, &QToolButton::clicked, this, &TerminalHeaderBar::requestDetachView);
+    m_boxLayout->addWidget(m_detachViewBtn);
 
     // Close button
 
@@ -226,6 +235,9 @@ void TerminalHeaderBar::paintEvent(QPaintEvent *paintEvent)
 
 void TerminalHeaderBar::mouseMoveEvent(QMouseEvent *ev)
 {
+    if (!m_dragPossible || !(ev->buttons() & Qt::LeftButton)) {
+        return;
+    }
     if (m_toggleExpandedMode->isChecked()) {
         return;
     }
@@ -237,18 +249,27 @@ void TerminalHeaderBar::mouseMoveEvent(QMouseEvent *ev)
         payload.setNum(qApp->applicationPid());
         mimeData->setData(QStringLiteral("konsole/terminal_display"), payload);
         drag->setMimeData(mimeData);
-        drag->exec();
+        const Qt::DropAction dragResult = drag->exec();
+
+        // If the drag is released outside this window, detach as an alternative gesture.
+        const QWidget *topWindow = window();
+        if (dragResult == Qt::IgnoreAction && topWindow != nullptr && !topWindow->frameGeometry().contains(QCursor::pos())) {
+            Q_EMIT requestDetachView();
+        }
+        m_dragPossible = false;
     }
 }
 
 void TerminalHeaderBar::mousePressEvent(QMouseEvent *ev)
 {
     m_startDrag = ev->pos();
+    m_dragPossible = (ev->button() == Qt::LeftButton) && (qobject_cast<QToolButton *>(childAt(ev->pos())) == nullptr);
 }
 
 void TerminalHeaderBar::mouseReleaseEvent(QMouseEvent *ev)
 {
     Q_UNUSED(ev)
+    m_dragPossible = false;
 }
 
 QSize TerminalHeaderBar::minimumSizeHint() const
@@ -282,6 +303,7 @@ void TerminalHeaderBar::applyVisibilitySettings()
     switch (toVisibility) {
     case KonsoleSettings::AlwaysShowSplitHeader:
         m_toggleExpandedMode->setDisabled(singleTerminalView);
+        m_detachViewBtn->setDisabled(singleTerminalView);
         setVisible(true);
         break;
     case KonsoleSettings::ShowSplitHeaderWhenNeeded: {

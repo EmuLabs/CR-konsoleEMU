@@ -28,6 +28,10 @@
                 <Action name="close-other-views"/>
                 <Action name="expand-active-view"/>
                 <Action name="shrink-active-view"/>
+                <Action name="expand-active-view-vertical"/>
+                <Action name="shrink-active-view-vertical"/>
+                <Action name="expand-active-view-horizontal"/>
+                <Action name="shrink-active-view-horizontal"/>
                 <Action name="toggle-maximize-current-view"/>
                 <Action name="equal-size-view"/>
             </Menu>

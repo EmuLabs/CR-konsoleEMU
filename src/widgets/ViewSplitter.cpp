@@ -34,6 +34,19 @@ int ViewSplitter::lastSplitterId = -1;
 
 namespace
 {
+int indexOfDirectChildContainingWidget(ViewSplitter *splitter, QWidget *descendant)
+{
+    for (int i = 0; i < splitter->count(); ++i) {
+        QWidget *child = splitter->widget(i);
+        for (QWidget *w = descendant; w != nullptr; w = w->parentWidget()) {
+            if (w == child) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
 int calculateHandleWidth(int settingsEnum)
 {
     switch (settingsEnum) {
@@ -74,7 +87,8 @@ void ViewSplitter::adjustActiveTerminalDisplaySize(int percentage)
 
     const int oldSize = containerSizes[containerIndex];
     const auto newSize = static_cast<int>(oldSize * (1.0 + percentage / 100.0));
-    const int perContainerDelta = (count() == 1) ? 0 : ((newSize - oldSize) / (count() - 1)) * (-1);
+    const int n = parentSplitter->count();
+    const int perContainerDelta = (n == 1) ? 0 : ((newSize - oldSize) / (n - 1)) * (-1);
 
     for (int &size : containerSizes) {
         size += perContainerDelta;
@@ -82,6 +96,37 @@ void ViewSplitter::adjustActiveTerminalDisplaySize(int percentage)
     containerSizes[containerIndex] = newSize;
 
     parentSplitter->setSizes(containerSizes);
+}
+
+void ViewSplitter::adjustActiveTerminalDisplaySizeAlongOrientation(int percentage, Qt::Orientation resizeAlong)
+{
+    auto *focusedTerminalDisplay = activeTerminalDisplay();
+    Q_ASSERT(focusedTerminalDisplay);
+
+    for (QWidget *w = focusedTerminalDisplay->parentWidget(); w != nullptr; w = w->parentWidget()) {
+        auto *parentSplitter = qobject_cast<ViewSplitter *>(w);
+        if (parentSplitter == nullptr || parentSplitter->orientation() != resizeAlong) {
+            continue;
+        }
+        const int containerIndex = indexOfDirectChildContainingWidget(parentSplitter, focusedTerminalDisplay);
+        if (containerIndex < 0) {
+            continue;
+        }
+
+        QList<int> containerSizes = parentSplitter->sizes();
+        const int oldSize = containerSizes[containerIndex];
+        const auto newSize = static_cast<int>(oldSize * (1.0 + percentage / 100.0));
+        const int n = parentSplitter->count();
+        const int perContainerDelta = (n == 1) ? 0 : ((newSize - oldSize) / (n - 1)) * (-1);
+
+        for (int &size : containerSizes) {
+            size += perContainerDelta;
+        }
+        containerSizes[containerIndex] = newSize;
+
+        parentSplitter->setSizes(containerSizes);
+        return;
+    }
 }
 
 // Get the first splitter that's a parent of the current focused widget.
@@ -395,13 +440,9 @@ void ViewSplitter::handleMinimizeMaximize(bool maximize, bool zoom)
 
             // This is very inexact, which is fine, because the aspect ratio of
             // both the scaled font and the terminal can differ anyway.
-            auto scaleFactor = std::min(
-                (topLevelSplitter->width() - scrollBarWidth)
-                / (currentTerminalDisplay->width() - scrollBarWidth),
+            auto scaleFactor = std::min((topLevelSplitter->width() - scrollBarWidth) / (currentTerminalDisplay->width() - scrollBarWidth),
 
-                (topLevelSplitter->height() - headerBarHeight)
-                / (currentTerminalDisplay->height() - headerBarHeight)
-            );
+                                        (topLevelSplitter->height() - headerBarHeight) / (currentTerminalDisplay->height() - headerBarHeight));
             auto newSize = int(fontSizeBeforeMaximization * scaleFactor * 0.97);
 
             if (newSize > fontSizeBeforeMaximization) {
@@ -492,6 +533,44 @@ QString ViewSplitter::getChildWidgetsLayout()
 namespace
 {
 TerminalDisplay *currentDragTarget = nullptr;
+
+bool isCenterSwapDrop(const TerminalDisplay *target, const QPoint &localPos)
+{
+    const int xMargin = qMax(24, target->width() / 4);
+    const int yMargin = qMax(24, target->height() / 4);
+    return (localPos.x() > xMargin) && (localPos.x() < target->width() - xMargin) && (localPos.y() > yMargin) && (localPos.y() < target->height() - yMargin);
+}
+
+void swapDisplays(TerminalDisplay *source, TerminalDisplay *target)
+{
+    auto *sourceParent = qobject_cast<ViewSplitter *>(source->parentWidget());
+    auto *targetParent = qobject_cast<ViewSplitter *>(target->parentWidget());
+    if (sourceParent == nullptr || targetParent == nullptr) {
+        return;
+    }
+
+    const int sourceIndex = sourceParent->indexOf(source);
+    const int targetIndex = targetParent->indexOf(target);
+    if (sourceIndex < 0 || targetIndex < 0) {
+        return;
+    }
+
+    if (sourceParent == targetParent) {
+        QList<QWidget *> orderedWidgets;
+        orderedWidgets.reserve(sourceParent->count());
+        for (int i = 0; i < sourceParent->count(); ++i) {
+            orderedWidgets << sourceParent->widget(i);
+        }
+        orderedWidgets.swapItemsAt(sourceIndex, targetIndex);
+        for (int i = 0; i < orderedWidgets.count(); ++i) {
+            sourceParent->insertWidget(i, orderedWidgets[i]);
+        }
+        return;
+    }
+
+    sourceParent->replaceWidget(sourceIndex, target);
+    targetParent->replaceWidget(targetIndex, source);
+}
 }
 
 void Konsole::ViewSplitter::dragEnterEvent(QDragEnterEvent *ev)
@@ -544,13 +623,43 @@ void Konsole::ViewSplitter::dropEvent(QDropEvent *ev)
         if (currentDragTarget != nullptr) {
             m_blockPropagatedDeletion = true;
 
-            currentDragTarget->hideDragTarget();
             auto source = qobject_cast<TerminalDisplay *>(ev->source());
+            auto target = currentDragTarget;
+            currentDragTarget->hideDragTarget();
+            currentDragTarget = nullptr;
+
+            if (source == nullptr || target == nullptr || source == target) {
+                m_blockPropagatedDeletion = false;
+                return;
+            }
+
+            const QPoint localPos = target->mapFromParent(ev->position().toPoint());
+            if (isCenterSwapDrop(target, localPos)) {
+                swapDisplays(source, target);
+                auto *sourceParent = qobject_cast<ViewSplitter *>(source->parentWidget());
+                auto *targetParent = qobject_cast<ViewSplitter *>(target->parentWidget());
+                auto *sourceTop = sourceParent != nullptr ? sourceParent->getToplevelSplitter() : nullptr;
+                auto *targetTop = targetParent != nullptr ? targetParent->getToplevelSplitter() : nullptr;
+
+                source->setFocus(Qt::OtherFocusReason);
+                if (sourceTop != nullptr) {
+                    Q_EMIT sourceTop->terminalDisplayDropped(source);
+                }
+                if (targetTop != nullptr && targetTop != sourceTop) {
+                    Q_EMIT targetTop->terminalDisplayDropped(target);
+                } else if (sourceTop != nullptr) {
+                    Q_EMIT sourceTop->terminalDisplayDropped(target);
+                }
+
+                m_blockPropagatedDeletion = false;
+                return;
+            }
+
             source->setVisible(false);
             source->setParent(nullptr);
 
-            currentDragTarget->setFocus(Qt::OtherFocusReason);
-            const auto droppedEdge = currentDragTarget->droppedEdge();
+            target->setFocus(Qt::OtherFocusReason);
+            const auto droppedEdge = target->droppedEdge();
 
             AddBehavior behavior = droppedEdge == Qt::LeftEdge || droppedEdge == Qt::TopEdge ? AddBehavior::AddBefore : AddBehavior::AddAfter;
 
@@ -563,7 +672,6 @@ void Konsole::ViewSplitter::dropEvent(QDropEvent *ev)
             // that in turn can call the SessionController.
             Q_EMIT getToplevelSplitter()->terminalDisplayDropped(source);
             source->setVisible(true);
-            currentDragTarget = nullptr;
 
             m_blockPropagatedDeletion = false;
         }

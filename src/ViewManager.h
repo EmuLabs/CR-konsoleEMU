@@ -394,10 +394,15 @@ private Q_SLOTS:
     void splitAutoNextTab();
     void expandActiveContainer();
     void shrinkActiveContainer();
+    void expandActiveViewVertical();
+    void shrinkActiveViewVertical();
+    void expandActiveViewHorizontal();
+    void shrinkActiveViewHorizontal();
     void equalSizeAllContainers();
 
     // called when the "Detach View" menu item is selected
     void detachActiveView();
+    void detachTerminalDisplay(TerminalDisplay *display);
     void detachActiveTab();
 
     // called when a session terminates - the view manager will delete any

@@ -50,6 +50,7 @@ protected:
 Q_SIGNALS:
     void requestToggleExpansion();
     void requestMoveToNewTab();
+    void requestDetachView();
 
 private:
     QBoxLayout *m_boxLayout;
@@ -62,9 +63,11 @@ private:
     QLabel *m_statusIconBell;
     QToolButton *m_closeBtn;
     QToolButton *m_moveToNewTab;
+    QToolButton *m_detachViewBtn;
     QToolButton *m_toggleExpandedMode;
     bool m_terminalIsFocused;
     QPoint m_startDrag;
+    bool m_dragPossible = false;
 };
 
 } // namespace Konsole

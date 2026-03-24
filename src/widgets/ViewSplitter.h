@@ -140,6 +140,13 @@ public:
      */
     void adjustActiveTerminalDisplaySize(int percentage);
 
+    /**
+     * Like adjustActiveTerminalDisplaySize(), but resizes along the nearest ancestor
+     * splitter whose orientation is @p resizeAlong (height vs. width), so nested splits
+     * can be resized in a fixed screen direction regardless of the inner split direction.
+     */
+    void adjustActiveTerminalDisplaySizeAlongOrientation(int percentage, Qt::Orientation resizeAlong);
+
     void focusUp();
     void focusDown();
     void focusLeft();
